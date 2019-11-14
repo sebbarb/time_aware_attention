@@ -14,15 +14,14 @@ from pdb import set_trace as bp
 if __name__ == '__main__':
   # Load data
   print('Load data...')
-  data = np.load(hp.data_dir + 'data_arrays.npz')
+  data = np.load(hp.data_dir + 'data_arrays.npz', allow_pickle=True)
   trainloader, num_batches, pos_weight = get_trainloader(data, 'ALL')
-  stat, diag, proc, pres, charts, diag_t, proc_t, label = get_data(data, 'ALL')
+  stat, dp, cp, dp_t, cp_t, label = get_data(data, 'ALL')
 
   # Get dictionaries
-  static_vars, dict_diagnoses, dict_procedures, dict_prescriptions, charts_columns = get_dictionaries(data)
-  num_static = stat.shape[1]
-  num_diag_codes, num_proc_codes, num_pres_codes = vocab_sizes(data)
-  num_charts = charts.shape[1]
+  static_vars, dict_dp, dict_cp = get_dictionaries(data)
+  num_static = num_static(data)
+  num_dp_codes, num_cp_codes = vocab_sizes(data)
 
   # ICD-9 Code descriptions
   dtype = {'ICD9_CODE': 'str', 'LONG_TITLE': 'str'}
@@ -34,9 +33,8 @@ if __name__ == '__main__':
   d_icd_procedures = d_icd_procedures.set_index('ICD9_CODE')['LONG_TITLE'].to_dict()
   
   # Initialize weights
-  weights_diag = pd.DataFrame(index=range(num_diag_codes), columns=['ICD9_CODE', 'DESCRIPTION', 'SCORE', 'CONF_LOWER', 'CONF_UPPER'])
-  weights_proc = pd.DataFrame(index=range(num_proc_codes), columns=['ICD9_CODE', 'DESCRIPTION', 'SCORE', 'CONF_LOWER', 'CONF_UPPER'])
-  weights_pres = pd.DataFrame(index=range(num_diag_codes), columns=['DRUG',                     'SCORE', 'CONF_LOWER', 'CONF_UPPER'])
+  weights_dp = pd.DataFrame(index=range(num_dp_codes), columns=['TYPE', 'ICD9_CODE', 'DESCRIPTION', 'SCORE', 'CONF_LOWER', 'CONF_UPPER'])
+  weights_cp = pd.DataFrame(index=range(num_cp_codes), columns=['TYPE', 'NAME',                     'SCORE', 'CONF_LOWER', 'CONF_UPPER'])
 
   # CUDA for PyTorch
   use_cuda = torch.cuda.is_available()
@@ -45,7 +43,7 @@ if __name__ == '__main__':
   torch.backends.cudnn.benchmark = True
 
   # Pytorch Network
-  net = BayesianNetwork(num_static, num_diag_codes, num_proc_codes, num_pres_codes, num_charts, pos_weight, num_batches).to(device)
+  net = BayesianNetwork(num_static, num_dp_codes, num_cp_codes, pos_weight, num_batches).to(device)
   net.eval()
   
   # Set log dir to read trained model from
@@ -55,11 +53,12 @@ if __name__ == '__main__':
   net.load_state_dict(torch.load(logdir + 'final_model.pt', map_location=torch.device(device)))
 
   # Intervals
-  all_vars = static_vars.tolist() + ['DIAGNOSES SCORE', 'PROCEDURES SCORE', 'PRESCRIPTIONS SCORE'] + charts_columns.tolist()
+  all_vars = static_vars.tolist() + ['DP SCORE', 'CP SCORE']
   all_vars = [var.title() for var in all_vars]
   mu = net.fc_all.weight.mu.detach().cpu().numpy().squeeze()
+  
   # For clarity, set coefficients of diag/proc/pres/charts scores to positive (and invert signs of scores accordingly)
-  diag_neg, proc_neg, pres_neg = mu[num_static:(num_static+3)] < 0
+  dp_neg, cp_neg = mu[num_static:(num_static+2)] < 0
   mu[num_static:] = np.abs(mu[num_static:])
   conf_lower = (net.fc_all.weight.mu - 1.96*net.fc_all.weight.sigma).detach().cpu().numpy().squeeze()
   conf_upper = (net.fc_all.weight.mu + 1.96*net.fc_all.weight.sigma).detach().cpu().numpy().squeeze()
@@ -72,75 +71,67 @@ if __name__ == '__main__':
 
   print('Get significance of individual codes...')
   num_samples = 1000
+
+  def pad(x): return F.pad(x, (0,1))
+  bp()
+  mean_coeff_dp = torch.matmul(pad(net.embed_dp.weight.mu), net.fc_dp.weight.mu.t()).detach().cpu().numpy().squeeze()
+  mean_coeff_cp = torch.matmul(pad(net.embed_cp.weight.mu), net.fc_cp.weight.mu.t()).detach().cpu().numpy().squeeze()
   
-  mean_coeff_diag = torch.matmul(net.embed_diag.weight.mu, net.fc_diag.weight.mu.t()).detach().cpu().numpy().squeeze()
-  mean_coeff_proc = torch.matmul(net.embed_proc.weight.mu, net.fc_proc.weight.mu.t()).detach().cpu().numpy().squeeze()
-  mean_coeff_pres = torch.matmul(net.embed_pres.weight.mu, net.fc_pres.weight.mu.t()).detach().cpu().numpy().squeeze()  
-  
-  samples_coeff_diag = np.zeros((num_diag_codes, num_samples))
-  samples_coeff_proc = np.zeros((num_proc_codes, num_samples))
-  samples_coeff_pres = np.zeros((num_pres_codes, num_samples))
+  samples_coeff_dp = np.zeros((num_dp_codes, num_samples))
+  samples_coeff_cp = np.zeros((num_cp_codes, num_samples))
   for sample in tqdm(range(num_samples)):
-    samples_coeff_diag[:, sample] = torch.matmul(net.embed_diag.weight.sample(), net.fc_diag.weight.sample().t()).detach().cpu().numpy().squeeze()
-    samples_coeff_proc[:, sample] = torch.matmul(net.embed_proc.weight.sample(), net.fc_proc.weight.sample().t()).detach().cpu().numpy().squeeze()
-    samples_coeff_pres[:, sample] = torch.matmul(net.embed_pres.weight.sample(), net.fc_pres.weight.sample().t()).detach().cpu().numpy().squeeze()
-    
-  if diag_neg:
-    mean_coeff_diag *= -1 
-    samples_coeff_diag *= -1 
-  if proc_neg:
-    mean_coeff_proc *= -1 
-    samples_coeff_proc *= -1 
-  if pres_neg:
-    mean_coeff_pres *= -1 
-    samples_coeff_pres *= -1 
+    samples_coeff_dp[:, sample] = torch.matmul(pad(net.embed_dp.weight.sample()), net.fc_dp.weight.sample().t()).detach().cpu().numpy().squeeze()
+    samples_coeff_cp[:, sample] = torch.matmul(pad(net.embed_cp.weight.sample()), net.fc_cp.weight.sample().t()).detach().cpu().numpy().squeeze()
+
+  if dp_neg:
+    mean_coeff_dp *= -1 
+    samples_coeff_dp *= -1 
+  if cp_neg:
+    mean_coeff_cp *= -1 
+    samples_coeff_cp *= -1 
+
+  ### check the following
   
-  print('Diagnoses...')
-  for id_diag in tqdm(range(1, num_diag_codes)):
-    weights_diag.at[id_diag, 'ICD9_CODE']   = dict_diagnoses.get(id_diag)
-    weights_diag.at[id_diag, 'DESCRIPTION'] = d_icd_diagnoses.get(dict_diagnoses.get(id_diag))
-    weights_diag.at[id_diag, 'SCORE']       = mean_coeff_diag[id_diag]
-    weights_diag.at[id_diag, 'CONF_LOWER']  = np.percentile(samples_coeff_diag[id_diag], 5)
-    weights_diag.at[id_diag, 'CONF_UPPER']  = np.percentile(samples_coeff_diag[id_diag], 95)
-  
-  print('Procedures...')
-  for id_proc in tqdm(range(1, num_proc_codes)):
-    weights_proc.at[id_proc, 'ICD9_CODE']   = dict_procedures.get(id_proc)
-    weights_proc.at[id_proc, 'DESCRIPTION'] = d_icd_procedures.get(dict_procedures.get(id_proc))
-    weights_proc.at[id_proc, 'SCORE']       = mean_coeff_proc[id_proc]
-    weights_proc.at[id_proc, 'CONF_LOWER']  = np.percentile(samples_coeff_proc[id_proc], 5)
-    weights_proc.at[id_proc, 'CONF_UPPER']  = np.percentile(samples_coeff_proc[id_proc], 95)
+  print('Diagnoses / Procedures...')
+  for id_dp in tqdm(range(1, num_dp_codes)):
+    name = dict_dp.get(id_dp)
+    weights_dp.at[id_dp, 'TYPE']        = name[:5]
+    weights_dp.at[id_dp, 'ICD9_CODE']   = name[6:]
+    if name[:5] == 'DIAGN':
+      weights_dp.at[id_dp, 'DESCRIPTION'] = d_icd_diagnoses.get(name[6:])
+    else:
+      weights_dp.at[id_dp, 'DESCRIPTION'] = d_icd_procedures.get(name[6:])
+    weights_dp.at[id_dp, 'SCORE']       = mean_coeff_dp[id_dp]
+    weights_dp.at[id_dp, 'CONF_LOWER']  = np.percentile(samples_coeff_dp[id_dp], 5)
+    weights_dp.at[id_dp, 'CONF_UPPER']  = np.percentile(samples_coeff_dp[id_dp], 95)
     
-  print('Prescriptions...')
-  for id_pres in tqdm(range(1, num_pres_codes)):
-    weights_pres.at[id_pres, 'DRUG']        = dict_prescriptions.get(id_pres)
-    weights_pres.at[id_pres, 'SCORE']       = mean_coeff_pres[id_pres]
-    weights_pres.at[id_pres, 'CONF_LOWER']  = np.percentile(samples_coeff_pres[id_pres], 5)
-    weights_pres.at[id_pres, 'CONF_UPPER']  = np.percentile(samples_coeff_pres[id_pres], 95)
+  print('Charts / Prescriptions...')
+  for id_cp in tqdm(range(1, num_cp_codes)):
+    name = dict_cp.get(id_cp)
+    weights_cp.at[id_cp, 'TYPE']        = name[:5]
+    weights_cp.at[id_cp, 'NAME']        = name[6:]
+    weights_cp.at[id_cp, 'SCORE']       = mean_coeff_cp[id_cp]
+    weights_cp.at[id_cp, 'CONF_LOWER']  = np.percentile(samples_coeff_cp[id_cp], 5)
+    weights_cp.at[id_cp, 'CONF_UPPER']  = np.percentile(samples_coeff_cp[id_cp], 95)
 
   print('-----------------------------------------')
   print(scores_init)
   print('-----------------------------------------')
-  weights_diag.sort_values(by='SCORE', ascending=False, inplace=True)
-  print(weights_diag.head(10))
+  weights_dp.sort_values(by='SCORE', ascending=False, inplace=True)
+  print(weights_dp.head(10))
   print('-----------------------------------------')
-  weights_proc.sort_values(by='SCORE', ascending=False, inplace=True)
-  print(weights_proc.head(10))
-  print('-----------------------------------------')
-  weights_pres.sort_values(by='SCORE', ascending=False, inplace=True)
-  print(weights_pres.head(10))
+  weights_cp.sort_values(by='SCORE', ascending=False, inplace=True)
+  print(weights_cp.head(10))
   print('-----------------------------------------')
   
   print('Save...')
+
   scores_init.to_pickle(hp.data_dir + 'scores_init_test.pkl')
   scores_init.to_csv(hp.data_dir + 'scores_init_test.csv', index=False)
   
-  weights_diag.to_pickle(hp.data_dir + 'weights_diag.pkl')
-  weights_diag.to_csv(hp.data_dir + 'weights_diag.csv', index=False)
-  
-  weights_proc.to_pickle(hp.data_dir + 'weights_proc.pkl')
-  weights_proc.to_csv(hp.data_dir + 'weights_proc.csv', index=False)
+  weights_dp.to_pickle(hp.data_dir + 'weights_dp.pkl')
+  weights_dp.to_csv(hp.data_dir + 'weights_dp.csv', index=False)
 
-  weights_pres.to_pickle(hp.data_dir + 'weights_pres.pkl')
-  weights_pres.to_csv(hp.data_dir + 'weights_pres.csv', index=False)
+  weights_cp.to_pickle(hp.data_dir + 'weights_cp.pkl')
+  weights_cp.to_csv(hp.data_dir + 'weights_cp.csv', index=False)
 

@@ -27,12 +27,10 @@ if __name__ == '__main__':
   prescriptions = pd.read_csv(hp.mimic_dir + 'PRESCRIPTIONS.csv', usecols=dtype.keys(), dtype=dtype, parse_dates=parse_dates)
   prescriptions = prescriptions.dropna()
   prescriptions['ICUSTAY_ID'] = prescriptions['ICUSTAY_ID'].astype('int32')
+  prescriptions['DRUG'] = 'PRESC_' + prescriptions['DRUG'].str.lower().replace('\s+', '', regex=True)
   prescriptions = prescriptions.rename(columns={'DRUG': 'VALUECAT', 'STARTDATE': 'CHARTTIME'})
   df = pd.concat([charts_outputs, prescriptions], ignore_index=True, sort=False)
-  
-  # Clean up names
-  df['VALUECAT'] = df['VALUECAT'].str.lower().replace('\s+', '', regex=True)
-  
+    
   print('-----------------------------------------')
 
   # Link charts/outputs and icu_pat tables

@@ -8,7 +8,7 @@ import math
 class Hyperparameters:
   '''Hyperparameters'''
   # data
-  mimic_dir = '../MIMIC-III Clinical Database/uncompressed/'
+  mimic_dir = '../../MIMIC-III Clinical Database/uncompressed/'
   data_dir = '../data/'
   logdir = '../logdir/' # log directory  
 
@@ -24,6 +24,7 @@ class Hyperparameters:
   # which data to load
   # on_the_cloud = False
   all_train = False
+  # all_train = True
   
   # network variants
   # net_variant = 'birnn_concat_time_delta'
@@ -32,12 +33,12 @@ class Hyperparameters:
   # net_variant = 'birnn_time_decay_attention'
   # net_variant = 'ode_birnn'
   # net_variant = 'ode_birnn_attention'
-  # net_variant = 'ode_attention'
-  # net_variant = 'attention_concat_time'
+  # net_variant = 'ode_attention' # TO ASSIGN
+  net_variant = 'attention_concat_time'
   # net_variant = 'birnn_ode_decay'
   # net_variant = 'birnn_ode_decay_attention'
   # net_variant = 'mce_attention'
-  net_variant = 'mce_birnn'
+  # net_variant = 'mce_birnn'
   # net_variant = 'mce_birnn_attention'
   
   # bayesian network

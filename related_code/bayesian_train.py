@@ -168,25 +168,20 @@ class BayesianNetwork(nn.Module):
     self.output_activations = output_activations
 
     # Embedding dimensions
-    self.embed_dp_dim = int(2*np.ceil(num_dp_codes**0.25))+1
-    self.embed_cp_dim = int(2*np.ceil(num_cp_codes**0.25))+1
+    self.embed_dp_dim = int(2*np.ceil(num_dp_codes**0.25))
+    self.embed_cp_dim = int(2*np.ceil(num_cp_codes**0.25))
 
     # Embedding layers
     self.embed_dp = BayesianEmbedding(num_embeddings=num_dp_codes, embedding_dim=self.embed_dp_dim, padding_idx=0)
     self.embed_cp = BayesianEmbedding(num_embeddings=num_cp_codes, embedding_dim=self.embed_cp_dim, padding_idx=0)
     
-    # ODE layers
-    self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    self.ode_dp = ODENet(self.device, self.embed_dp_dim, self.embed_dp_dim, output_dim=self.embed_dp_dim, augment_dim=0, time_dependent=False, non_linearity='softplus', tol=1e-3, adjoint=True)
-    self.ode_cp = ODENet(self.device, self.embed_cp_dim, self.embed_cp_dim, output_dim=self.embed_cp_dim, augment_dim=0, time_dependent=False, non_linearity='softplus', tol=1e-3, adjoint=True)
-    
     # Attention layers
-    self.attention_dp = BayesianAttention(embedding_dim=self.embed_dp_dim)
-    self.attention_cp = BayesianAttention(embedding_dim=self.embed_cp_dim)
+    self.attention_dp = BayesianAttention(embedding_dim=self.embed_dp_dim+1) #+1 for the concatenated time
+    self.attention_cp = BayesianAttention(embedding_dim=self.embed_cp_dim+1)
     
     # Fully connected output
-    self.fc_dp  = BayesianLinear(self.embed_dp_dim, 1)
-    self.fc_cp  = BayesianLinear(self.embed_cp_dim, 1)
+    self.fc_dp  = BayesianLinear(self.embed_dp_dim+1, 1)
+    self.fc_cp  = BayesianLinear(self.embed_cp_dim+1, 1)
     self.fc_all = BayesianLinear(num_static + 2, 1)
     
   def forward(self, stat, dp, cp, dp_t, cp_t, sample=False):
@@ -195,29 +190,15 @@ class BayesianNetwork(nn.Module):
     embedded_dp = self.embed_dp(dp, sample)
     embedded_cp = self.embed_cp(cp, sample)
     
-    # ODE
-    ## Round times
-    dp_t = torch.round(100*dp_t)/100
-    cp_t = torch.round(100*cp_t)/100
-    
-    embedded_dp_long = embedded_dp.view(-1, self.embed_dp_dim)
-    dp_t_long = dp_t.view(-1)
-    dp_t_long_unique, inverse_indices = torch.unique(dp_t_long, sorted=True, return_inverse=True)
-    ode_dp_long = self.ode_dp(embedded_dp_long, dp_t_long_unique)
-    ode_dp_long = ode_dp_long[inverse_indices, torch.arange(0, inverse_indices.size(0)), :]
-    ode_dp = ode_dp_long.view(dp.size(0), dp.size(1), self.embed_dp_dim)
-
-    embedded_cp_long = embedded_cp.view(-1, self.embed_cp_dim)
-    cp_t_long = cp_t.view(-1)
-    cp_t_long_unique, inverse_indices = torch.unique(cp_t_long, sorted=True, return_inverse=True)
-    ode_cp_long = self.ode_cp(embedded_cp_long, cp_t_long_unique)
-    ode_cp_long = ode_cp_long[inverse_indices, torch.arange(0, inverse_indices.size(0)), :]
-    ode_cp = ode_cp_long.view(cp.size(0), cp.size(1), self.embed_cp_dim)
+    # Concatate with time
+    ## output dim: batch_size x seq_len x (embedding_dim+1)
+    concat_dp = torch.cat((embedded_dp, torch.unsqueeze(dp_t, dim=-1)), dim=-1)
+    concat_cp = torch.cat((embedded_cp, torch.unsqueeze(cp_t, dim=-1)), dim=-1)
     
     # Attention
     ## output dim: batch_size x (embedding_dim+1)
-    attended_dp, weights_dp = self.attention_dp(ode_dp, (dp > 0).float(), sample)
-    attended_cp, weights_cp = self.attention_cp(ode_cp, (cp > 0).float(), sample)
+    attended_dp, weights_dp = self.attention_dp(concat_dp, (dp > 0).float(), sample)
+    attended_cp, weights_cp = self.attention_cp(concat_cp, (cp > 0).float(), sample)
     
     # Scores
     score_dp = self.fc_dp(attended_dp, sample)

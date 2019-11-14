@@ -981,7 +981,7 @@ elif hp.net_variant == 'mce_attention':
       # Precomputed embedding weights
       self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
       self.emb_weight_dp = torch.Tensor(np.load(hp.data_dir + 'emb_weight_dp_13.npy')).to(self.device)
-      self.emb_weight_cp = torch.Tensor(np.load(hp.data_dir + 'emb_weight_cp_13.npy')).to(self.device)
+      self.emb_weight_cp = torch.Tensor(np.load(hp.data_dir + 'emb_weight_cp_11.npy')).to(self.device)
       
       # Attention layers
       self.attention_dp = Attention(embedding_dim=self.embed_dp_dim+1) #+1 for the concatenated time
@@ -1035,7 +1035,7 @@ if hp.net_variant == 'mce_birnn':
       # Precomputed embedding weights
       self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
       self.emb_weight_dp = torch.Tensor(np.load(hp.data_dir + 'emb_weight_dp_7.npy')).to(self.device)
-      self.emb_weight_cp = torch.Tensor(np.load(hp.data_dir + 'emb_weight_cp_7.npy')).to(self.device)
+      self.emb_weight_cp = torch.Tensor(np.load(hp.data_dir + 'emb_weight_cp_6.npy')).to(self.device)
 
       # GRU layers
       self.gru_dp_fw = nn.GRU(input_size=self.embed_dp_dim+1, hidden_size=self.embed_dp_dim+1, num_layers=1, batch_first=True)
@@ -1106,7 +1106,7 @@ elif hp.net_variant == 'mce_birnn_attention':
       # Precomputed embedding weights
       self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
       self.emb_weight_dp = torch.Tensor(np.load(hp.data_dir + 'emb_weight_dp_7.npy')).to(self.device)
-      self.emb_weight_cp = torch.Tensor(np.load(hp.data_dir + 'emb_weight_cp_7.npy')).to(self.device)
+      self.emb_weight_cp = torch.Tensor(np.load(hp.data_dir + 'emb_weight_cp_6.npy')).to(self.device)
 
       # GRU layers
       self.gru_dp_fw = nn.GRU(input_size=self.embed_dp_dim+1, hidden_size=self.embed_dp_dim+1, num_layers=1, batch_first=True)

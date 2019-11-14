@@ -68,7 +68,7 @@ if __name__ == '__main__':
   print('Split data into train/validate/test...')
   # Split patients to avoid data leaks
   patients = icu_pat['SUBJECT_ID'].drop_duplicates()
-  train, validate, test = np.split(patients.sample(frac=1, random_state=42), [int(.9*len(patients)), int(.9*len(patients))])
+  train, validate, test = np.split(patients.sample(frac=1, random_state=123), [int(.9*len(patients)), int(.9*len(patients))])
   train_ids = icu_pat['SUBJECT_ID'].isin(train).values
   validate_ids = icu_pat['SUBJECT_ID'].isin(validate).values
   test_ids = icu_pat['SUBJECT_ID'].isin(test).values

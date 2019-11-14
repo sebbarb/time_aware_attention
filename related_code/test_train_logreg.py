@@ -30,7 +30,7 @@ if __name__ == '__main__':
   charts = pd.read_pickle(hp.data_dir + 'charts_outputs_last_only.pkl')
   charts = charts.drop(columns=['CHARTTIME'])
   charts = pd.get_dummies(charts, columns = ['VALUECAT']).groupby('ICUSTAY_ID').sum()
-  charts.drop(columns=['VALUECAT_BM_n', 'VALUECAT_BP_n', 'VALUECAT_BT_n', 'VALUECAT_GC_n', 'VALUECAT_HR_n', 'VALUECAT_RR_n', 'VALUECAT_UO_n'], inplace=True) # drop reference columns
+  charts.drop(columns=['VALUECAT_CHART_BP_n', 'VALUECAT_CHART_BT_n', 'VALUECAT_CHART_GC_n', 'VALUECAT_CHART_HR_n', 'VALUECAT_CHART_RR_n', 'VALUECAT_CHART_UO_n'], inplace=True) # drop reference columns
   
   print('-----------------------------------------')
   

@@ -37,6 +37,8 @@ if __name__ == '__main__':
   procedures = procedures.dropna()
   
   # Merge diagnoses and procedures
+  diagnoses['ICD9_CODE'] = 'DIAGN_' + diagnoses['ICD9_CODE'].str.lower().str.strip()
+  procedures['ICD9_CODE'] = 'PROCE_' + procedures['ICD9_CODE'].str.lower().str.strip()
   diag_proc = pd.concat([diagnoses, procedures], ignore_index=True, sort=False)
   
   print('-----------------------------------------')
@@ -59,9 +61,6 @@ if __name__ == '__main__':
   # Lost some ICUSTAY_IDs with only negative DAYS_TO_OUT, merge back
   diag_proc = pd.merge(icu_pat[['ICUSTAY_ID']], diag_proc, how='left', on=['ICUSTAY_ID'])
   
-  # Clean up codes
-  diag_proc['ICD9_CODE'] = diag_proc['ICD9_CODE'].str.lower().str.strip()
-
   print('Drop duplicates...')
   diag_proc = diag_proc.drop_duplicates()
 

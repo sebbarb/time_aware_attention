@@ -74,19 +74,22 @@ if __name__ == '__main__':
   gcs_total_bins                = np.array([-1, 7, 13, 14, 15])
   bmi_bins                      = np.array([-1, 15, 16, 18.5, 25, 30, 35, 40, 45, 50, 60, np.Inf])
   urine_output_bins             = np.array([-1, 670.99, 1426.99, 2543.99, 6896, np.Inf])
-  bins = [heart_rate_bins, respiratory_rate_bins, body_temperature_bins, mean_bp_bins, fraction_inspired_oxygen_bins, gcs_total_bins, bmi_bins, urine_output_bins]
+  #bins = [heart_rate_bins, respiratory_rate_bins, body_temperature_bins, mean_bp_bins, fraction_inspired_oxygen_bins, gcs_total_bins, bmi_bins, urine_output_bins]
+  bins = [heart_rate_bins, respiratory_rate_bins, body_temperature_bins, mean_bp_bins, fraction_inspired_oxygen_bins, gcs_total_bins, urine_output_bins]
   # Labels 
-  heart_rate_labels               = ['HR_m1', 'HR_n', 'HR_p1', 'HR_p2', 'HR_p3']
-  respiratory_rate_labels         = ['RR_m2', 'RR_m1', 'RR_n', 'RR_p1', 'RR_p2', 'RR_p3']
-  body_temperature_labels         = ['BT_m3', 'BT_m2', 'BT_m1', 'BT_n', 'BT_p1', 'BT_p2']
-  mean_bp_labels                  = ['BP_m3', 'BP_m2', 'BP_m1', 'BP_n', 'BP_p1']
-  fraction_inspired_oxygen_labels = ['VENT']
-  gcs_total_labels                = ['GC_m3', 'GC_m2', 'GC_m1', 'GC_n']
-  bmi_labels                      = ['BM_m3', 'BM_m2', 'BM_m1', 'BM_n', 'BM_p1', 'BM_p2', 'BM_p3', 'BM_p4', 'BM_p5', 'BM_p6', 'BM_p7']
-  urine_output_labels             = ['UO_m3', 'UO_m2', 'UO_m1', 'UO_n', 'UO_p1']
-  labels = [heart_rate_labels, respiratory_rate_labels, body_temperature_labels, mean_bp_labels, fraction_inspired_oxygen_labels, gcs_total_labels, bmi_labels, urine_output_labels]
+  heart_rate_labels               = ['CHART_HR_m1', 'CHART_HR_n', 'CHART_HR_p1', 'CHART_HR_p2', 'CHART_HR_p3']
+  respiratory_rate_labels         = ['CHART_RR_m2', 'CHART_RR_m1', 'CHART_RR_n', 'CHART_RR_p1', 'CHART_RR_p2', 'CHART_RR_p3']
+  body_temperature_labels         = ['CHART_BT_m3', 'CHART_BT_m2', 'CHART_BT_m1', 'CHART_BT_n', 'CHART_BT_p1', 'CHART_BT_p2']
+  mean_bp_labels                  = ['CHART_BP_m3', 'CHART_BP_m2', 'CHART_BP_m1', 'CHART_BP_n', 'CHART_BP_p1']
+  fraction_inspired_oxygen_labels = ['CHART_VENT']
+  gcs_total_labels                = ['CHART_GC_m3', 'CHART_GC_m2', 'CHART_GC_m1', 'CHART_GC_n']
+  bmi_labels                      = ['CHART_BM_m3', 'CHART_BM_m2', 'CHART_BM_m1', 'CHART_BM_n', 'CHART_BM_p1', 'CHART_BM_p2', 'CHART_BM_p3', 'CHART_BM_p4', 'CHART_BM_p5', 'CHART_BM_p6', 'CHART_BM_p7']
+  urine_output_labels             = ['CHART_UO_m3', 'CHART_UO_m2', 'CHART_UO_m1', 'CHART_UO_n', 'CHART_UO_p1']
+  #labels = [heart_rate_labels, respiratory_rate_labels, body_temperature_labels, mean_bp_labels, fraction_inspired_oxygen_labels, gcs_total_labels, bmi_labels, urine_output_labels]
+  labels = [heart_rate_labels, respiratory_rate_labels, body_temperature_labels, mean_bp_labels, fraction_inspired_oxygen_labels, gcs_total_labels, urine_output_labels]
   # Chart event types
-  ce_types = ['HEART_RATE', 'RESPIRATORY_RATE', 'BODY_TEMPERATURE', 'MEAN_BP', 'FRACTION_INSPIRED_OXYGEN', 'GCS_TOTAL', 'BMI', 'URINE_OUTPUT']
+  #ce_types = ['HEART_RATE', 'RESPIRATORY_RATE', 'BODY_TEMPERATURE', 'MEAN_BP', 'FRACTION_INSPIRED_OXYGEN', 'GCS_TOTAL', 'BMI', 'URINE_OUTPUT']
+  ce_types = ['HEART_RATE', 'RESPIRATORY_RATE', 'BODY_TEMPERATURE', 'MEAN_BP', 'FRACTION_INSPIRED_OXYGEN', 'GCS_TOTAL', 'URINE_OUTPUT']
   
   df_list = []
   df_list_last_only = [] # for logistic regression
