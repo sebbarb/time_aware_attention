@@ -53,10 +53,14 @@ def vocab_sizes(data):
   return data['dp'].max()+1, data['cp'].max()+1
 
   
-def get_trainloader(data, type, shuffle=True):
+def get_trainloader(data, type, shuffle=True, idx=None):
   # Data
   static, dp, cp, dp_times, cp_times, label = get_data(data, type)
-  
+
+  # Bootstrap
+  if idx is not None:
+    static, dp, cp, dp_times, cp_times, label = static[idx], dp[idx], cp[idx], dp_times[idx], cp_times[idx], label[idx]
+
   # Compute total batch count
   num_batches = len(label) // hp.batch_size
   

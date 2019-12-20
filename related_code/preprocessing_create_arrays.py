@@ -72,14 +72,18 @@ if __name__ == '__main__':
   train_ids = icu_pat['SUBJECT_ID'].isin(train).values
   validate_ids = icu_pat['SUBJECT_ID'].isin(validate).values
   test_ids = icu_pat['SUBJECT_ID'].isin(test).values
+  
+  print('Get patients corresponding to test ids')
+  test_ids_patients = icu_pat['SUBJECT_ID'].iloc[test_ids].reset_index(drop=True)
 
   print('-----------------------------------------')
   
   print('Save...')
-  np.savez(hp.data_dir + 'data_arrays.npz', static=static, static_vars=static_vars, label=label,
-           dp=dp, cp=cp, dp_times=dp_times, cp_times=cp_times, dict_dp=dict_dp, dict_cp=dict_cp,
-           train_ids=train_ids, validate_ids=validate_ids, test_ids=test_ids)
-  np.savez(hp.data_dir + 'data_dictionaries.npz', dict_dp=dict_dp, dict_cp=dict_cp)
+  # np.savez(hp.data_dir + 'data_arrays.npz', static=static, static_vars=static_vars, label=label,
+           # dp=dp, cp=cp, dp_times=dp_times, cp_times=cp_times, dict_dp=dict_dp, dict_cp=dict_cp,
+           # train_ids=train_ids, validate_ids=validate_ids, test_ids=test_ids)
+  # np.savez(hp.data_dir + 'data_dictionaries.npz', dict_dp=dict_dp, dict_cp=dict_cp)
+  test_ids_patients.to_pickle(hp.data_dir + 'test_ids_patients.pkl')
            
 
 

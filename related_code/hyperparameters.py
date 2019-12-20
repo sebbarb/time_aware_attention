@@ -29,17 +29,21 @@ class Hyperparameters:
   # network variants
   # net_variant = 'birnn_concat_time_delta'
   # net_variant = 'birnn_concat_time_delta_attention'
-  # net_variant = 'birnn_time_decay'
-  # net_variant = 'birnn_time_decay_attention'
-  # net_variant = 'ode_birnn'
-  # net_variant = 'ode_birnn_attention'
-  # net_variant = 'ode_attention' # TO ASSIGN
-  net_variant = 'attention_concat_time'
-  # net_variant = 'birnn_ode_decay'
-  # net_variant = 'birnn_ode_decay_attention'
-  # net_variant = 'mce_attention'
-  # net_variant = 'mce_birnn'
-  # net_variant = 'mce_birnn_attention'
+  # net_variant = 'birnn_time_decay'#
+  # net_variant = 'birnn_time_decay_attention'#
+  # net_variant = 'ode_birnn'#
+  # net_variant = 'ode_birnn_attention'#
+  # net_variant = 'ode_attention'#
+  # net_variant = 'attention_concat_time'
+  net_variant = 'birnn_ode_decay'#
+  # net_variant = 'birnn_ode_decay_attention'#
+  # net_variant = 'mce_attention'#
+  # net_variant = 'mce_birnn'#
+  # net_variant = 'mce_birnn_attention'#
+  
+  # bootstrapping
+  np_seed = 1234
+  bootstrap_samples = 100
   
   # bayesian network
   pi = 0.5
